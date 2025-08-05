@@ -22,3 +22,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+formApp/vendor
+formApp/node_modules
+formApp/.env
+formApp/storage/logs
+formApp/storage/framework/cache
+formApp/storage/framework/views
+formApp/storage/framework/sessions
+formApp/storage/framework/cache

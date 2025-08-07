@@ -1,35 +1,19 @@
-# Start with a stable, official PHP image with an Apache web server
-# Using a specific version like 8.2 ensures consistency
+# Stage 1: Get the Composer binary
+FROM composer:2 AS composer_stage
+
+# Stage 2: Your application's base image
 FROM php:8.2-apache
 
-# Set the working directory inside the container to /app
-# All subsequent commands will run from this directory
-WORKDIR /app
+# Copy the Composer binary from the first stage
+COPY --from=composer_stage /usr/bin/composer /usr/local/bin/composer
 
-# Install essential PHP extensions that Laravel needs
-# pdo_mysql is for connecting to a MySQL database
-RUN docker-php-ext-install pdo pdo_mysql
+# Set the working directory for your application
+WORKDIR /var/www/html
 
-# --- Build Stage ---
-# First, copy only the composer files. This is a Docker optimization technique.
-# If these files don't change, Docker can use a cached layer, speeding up future builds.
-COPY composer.json composer.lock ./
-
-# Install Composer dependencies for production
-# --no-dev: Skips development-only packages
-# --optimize-autoloader: Creates a more efficient autoloader for better performance
-RUN composer install --no-dev --optimize-autoloader
-
-# Now, copy the rest of your application code into the container
+# Copy your application files into the image
 COPY . .
 
-# --- Final Configuration ---
-# Set the correct file permissions for Laravel's storage and cache directories.
-# This is a critical step that prevents "permission denied" errors.
-# The web server (www-data) needs to be able to write to these folders.
-RUN chown -R www-data:www-data storage bootstrap/cache
-RUN chmod -R 775 storage bootstrap/cache
+# Now, you can run the composer command successfully
+RUN composer install --no-dev --optimize-autoloader
 
-# This is the command that will run when the container starts.
-# It caches Laravel's configuration for a speed boost and then starts the Apache server.
-CMD php artisan config:cache && php artisan route:cache && vendor/bin/heroku-php-apache2 public/
+# Continue with the rest of your Dockerfile...

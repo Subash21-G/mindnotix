@@ -1,6 +1,6 @@
 # Start with a stable, official PHP image with an Apache web server
 # Using a specific version like 8.2 ensures consistency
-FROM heroku/php:8.2-apache
+FROM php:8.2-apache
 
 # Set the working directory inside the container to /app
 # All subsequent commands will run from this directory

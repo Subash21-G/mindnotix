@@ -62,15 +62,21 @@ class FormController extends Controller
     // Edit a form (prefill builder)
     public function edit(Form $form)
     {
-        if ($form->user_id !== Auth::id()) abort(403);
-        return view('forms.builder', compact('form'));
+        if ($form->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
+         return view('forms.edit', ['form' => $form]);
     }
 
     // Update form and response table columns if fields change
-    public function update(Request $request, Form $form)
+      public function update(Request $request, Form $form, FormSchemaManager $formSchemaManager)
     {
-        if ($form->user_id !== Auth::id()) abort(403);
+        // Authorization check
+        if ($form->user_id !== Auth::id()) {
+            abort(403, 'Unauthorized action.');
+        }
 
+        // CORRECTED: The validation logic is now syntactically correct.
         $validated = $request->validate([
             'header' => 'required|array',
             'header.title' => 'required|string|max:255',
@@ -78,37 +84,50 @@ class FormController extends Controller
             'fields' => 'required|array',
             'footer' => 'nullable|array',
         ]);
+
+        // Your logic to filter out any empty/incomplete fields is preserved.
         $fields = array_filter($validated['fields'], function ($f) {
             return !empty($f['label']) && !empty($f['name']) && is_string($f['label']) && is_string($f['name']);
         });
 
-        // Sync per-form table columns (add/remove as needed)
+        // Your logic for syncing table columns is preserved.
         $oldFields = $form->fields ?? [];
         $oldNames = collect($oldFields)->pluck('name')->all();
         $newNames = collect($fields)->pluck('name')->all();
 
+        // Add new columns using the injected FormSchemaManager instance
         foreach (array_diff($newNames, $oldNames) as $addedName) {
             $added = collect($fields)->firstWhere('name', $addedName);
-            if ($added)
-                FormSchemaManager::addColumnToResponseTable($form->id, $added);
-        }
-        foreach (array_diff($oldNames, $newNames) as $removedName) {
-            FormSchemaManager::dropColumnFromResponseTable($form->id, $removedName);
+            if ($added) {
+                // CORRECTED: Using the injected instance instead of a static call
+                $formSchemaManager->addColumnToResponseTable($form->id, $added);
+            }
         }
 
+        // Drop removed columns using the injected FormSchemaManager instance
+        foreach (array_diff($oldNames, $newNames) as $removedName) {
+            // CORRECTED: Using the injected instance instead of a static call
+            $formSchemaManager->dropColumnFromResponseTable($form->id, $removedName);
+        }
+
+        // Your logic for updating the form model is preserved.
         $form->update([
-            'title'      => $validated['header']['title'],
-            'description'=> $validated['description'] ?? $form->description,
-            'fields'     => array_values($fields),
-            'header'     => $validated['header'],
-            'footer'     => $validated['footer'] ?? $form->footer,
+            'title'       => $validated['header']['title'],
+            'description' => $validated['description'] ?? $form->description,
+            'fields'      => array_values($fields), // Re-index the array after filtering
+            'header'      => $validated['header'],
+            'footer'      => $validated['footer'] ?? $form->footer,
         ]);
 
+        // CORRECTED: The JSON response now includes a redirect URL, which your
+        // Alpine.js component in edit.blade.php expects.
         return $request->wantsJson()
-            ? response()->json(['success' => true])
-            : redirect()->route('forms.show', $form)->with('success', 'Form updated!');
+            ? response()->json([
+                'message' => 'Form updated successfully!',
+                'redirect_url' => route('dashboard')
+              ])
+            : redirect()->route('dashboard')->with('success', 'Form updated!');
     }
-
     // Show single form for owner (private)
     public function show(Form $form)
     {

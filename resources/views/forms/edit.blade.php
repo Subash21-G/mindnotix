@@ -2,10 +2,10 @@
 
 @section('content')
 <div class="max-w-5xl mx-auto p-6 bg-white shadow-md rounded-lg mt-6"
-     x-data="formCreator()"
+     x-data="formEditor(@json($form))"
      x-init="init()">
 
-    <h2 class="text-2xl font-bold text-indigo-700 mb-4">🛠️ Create New Form</h2>
+    <h2 class="text-2xl font-bold text-indigo-700 mb-4">✏️ Edit Form</h2>
 
     <form @submit.prevent="submitForm">
         <!-- HEADER SECTION -->
@@ -117,9 +117,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm text-gray-600">Label</label>
-                            <input type="text" x-model="field.label"
-                                   @input="field.name = generateSlug(field.label)"
-                                   class="w-full border rounded p-2" required>
+                            <input type="text" x-model="field.label" @input="field.name = generateSlug(field.label)" class="w-full border rounded p-2" required>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-600">Name (auto-generated)</label>
@@ -141,20 +139,13 @@
                         </div>
                         <div>
                             <label class="block text-sm text-gray-600">Validation Rules</label>
-                            <input type="text" x-model="field.rules"
-                                   @input="onRulesEdit(index)"
-                                   class="w-full border rounded p-2"
-                                   placeholder="e.g. required|string|max:100">
+                            <input type="text" x-model="field.rules" @input="onRulesEdit(index)" class="w-full border rounded p-2" placeholder="e.g. required|string|max:100">
                             <div class="mt-2 flex items-center">
-                                <input type="checkbox" :id="'required-' + index"
-                                       @change="toggleRequiredRule(index, $event.target.checked)"
-                                       class="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                                       :checked="field.rules.split('|').includes('required')">
+                                <input type="checkbox" :id="'required-' + index" @change="toggleRequiredRule(index, $event.target.checked)" class="h-4 w-4 text-indigo-600 border-gray-300 rounded" :checked="field.rules.split('|').includes('required')">
                                 <label :for="'required-' + index" class="ml-2 text-sm text-gray-800">Required</label>
                             </div>
                         </div>
                     </div>
-                    <!-- Options for choice fields -->
                     <template x-if="field.type === 'single_choice' || field.type === 'multiple_choice'">
                         <div class="mt-2">
                             <label class="block text-gray-700 mb-1">Options</label>
@@ -171,10 +162,9 @@
             </template>
         </div>
         <div class="my-6 flex justify-between">
-            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-                    @click="addField()">➕ Add Field</button>
+            <button type="button" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition" @click="addField()">➕ Add Field</button>
             <button type="submit" :disabled="isSubmitting" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition disabled:bg-gray-400">
-                <span x-show="!isSubmitting">✅ Create Form</span>
+                <span x-show="!isSubmitting">💾 Update Form</span>
                 <span x-show="isSubmitting">Saving...</span>
             </button>
         </div>
@@ -182,121 +172,62 @@
 </div>
 
 <script>
-function formCreator() {
+function formEditor(existingForm) {
     return {
         isSubmitting: false,
+        // This robust initialization prevents errors even if some data is missing.
         form: {
-            title: 'My New Form',
-            description: '',
+            id: existingForm.id,
+            title: existingForm.title || 'Untitled Form',
+            description: existingForm.description || '',
             header: {
-                image: '', title: '', subtitle: '', title_align: 'center', theme_color: '#6366f1', logo: ''
+                image: existingForm.header?.image || '',
+                title: existingForm.header?.title || '',
+                subtitle: existingForm.header?.subtitle || '',
+                title_align: existingForm.header?.title_align || 'center',
+                theme_color: existingForm.header?.theme_color || '#6366f1',
+                logo: existingForm.header?.logo || ''
             },
             footer: {
-                show_footer: true, website: '', support_numbers: [], support_emails: [], social: [], extra: ''
+                show_footer: existingForm.footer?.show_footer ?? true,
+                website: existingForm.footer?.website || '',
+                support_numbers: existingForm.footer?.support_numbers || [],
+                support_emails: existingForm.footer?.support_emails || [],
+                social: existingForm.footer?.social || [],
+                extra: existingForm.footer?.extra || ''
             },
-            fields: [],
+            fields: existingForm.fields || [],
         },
         init() {
-            // Always start with one blank field for a new form
-            if (this.form.fields.length === 0) {
-                this.addField();
-            }
-        },
-        addField() {
-            this.form.fields.push({
-                label: '', name: '', type: 'short_answer', rules: 'required|string|max:255', options: [],
-                _customRules: false
+            this.form.fields.forEach(field => {
+                if ((field.type === 'single_choice' || field.type === 'multiple_choice') && !Array.isArray(field.options)) {
+                    field.options = [];
+                }
             });
         },
+        // All other helper functions are the same
+        addField() { this.form.fields.push({ label: '', name: '', type: 'short_answer', rules: 'required|string|max:255', options: [], _customRules: false }); },
         removeField(index) { this.form.fields.splice(index, 1); },
-        addOption(fieldIndex) {
-            if (!this.form.fields[fieldIndex].options) { this.form.fields[fieldIndex].options = []; }
-            this.form.fields[fieldIndex].options.push('');
-        },
-        removeOption(fieldIndex, optionIndex) {
-            this.form.fields[fieldIndex].options.splice(optionIndex, 1);
-        },
-        generateSlug(text) {
-            return text
-                ? text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/__+/g, '_').replace(/^-+/, '').replace(/-+$/, '')
-                : '';
-        },
-        onTypeChange(index) {
-            const field = this.form.fields[index];
-            if (field._customRules) return;
-            field.rules = this.getDefaultRules(field.type);
-        },
-        onRulesEdit(index) {
-            this.form.fields[index]._customRules = true;
-        },
-        getDefaultRules(type) {
-            switch(type) {
-                case 'email':           return 'required|email|max:255';
-                case 'mobile':          return 'required|string|min:7|max:16';
-                case 'age':             return 'required|numeric|min:1|max:120';
-                case 'paragraph':       return 'required|string|max:1000';
-                case 'short_answer':    return 'required|string|max:255';
-                case 'single_choice':   return 'required|string|max:255';
-                case 'multiple_choice': return 'required|array';
-                case 'location':        return 'required|string|max:255';
-                case 'file':            return 'nullable|file|max:10240';
-                default:                return 'required|string';
-            }
-        },
-        toggleRequiredRule(index, isChecked) {
-            const field = this.form.fields[index];
-            let rulesArr = field.rules.split('|').map(r => r.trim()).filter(r => r);
-            rulesArr = rulesArr.filter(rule => rule !== 'required');
-            if (isChecked) rulesArr.unshift('required');
-            field.rules = rulesArr.join('|');
-            field._customRules = true;
-        },
+        addOption(fieldIndex) { if (!this.form.fields[fieldIndex].options) { this.form.fields[fieldIndex].options = []; } this.form.fields[fieldIndex].options.push(''); },
+        removeOption(fieldIndex, optionIndex) { this.form.fields[fieldIndex].options.splice(optionIndex, 1); },
+        generateSlug(text) { return text ? text.toString().toLowerCase().replace(/\s+/g, '_').replace(/[^\w-]+/g, '').replace(/__+/g, '_').replace(/^-+/, '').replace(/-+$/, '') : ''; },
+        onTypeChange(index) { const field = this.form.fields[index]; if (field._customRules) return; field.rules = this.getDefaultRules(field.type); },
+        onRulesEdit(index) { this.form.fields[index]._customRules = true; },
+        getDefaultRules(type) { switch(type) { case 'email': return 'required|email|max:255'; case 'mobile': return 'required|string|min:7|max:16'; case 'age': return 'required|numeric|min:1|max:120'; case 'paragraph': return 'required|string|max:1000'; case 'short_answer': return 'required|string|max:255'; case 'single_choice': return 'required|string|max:255'; case 'multiple_choice': return 'required|array'; case 'location': return 'required|string|max:255'; case 'file': return 'nullable|file|max:10240'; default: return 'required|string'; } },
+        toggleRequiredRule(index, isChecked) { const field = this.form.fields[index]; let rulesArr = field.rules.split('|').map(r => r.trim()).filter(r => r); rulesArr = rulesArr.filter(rule => rule !== 'required'); if (isChecked) rulesArr.unshift('required'); field.rules = rulesArr.join('|'); field._customRules = true; },
         submitForm() {
             this.isSubmitting = true;
-            // Remove builder-only props before submitting
-            this.form.fields = this.form.fields.map(field => {
-                let f = { ...field };
-                delete f._customRules;
-                return f;
-            });
-
-            // This logic is now only for creating a new form
-            fetch("{{ route('forms.store') }}", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Accept': 'application/json'
-                },
+            this.form.fields = this.form.fields.map(field => { let f = { ...field }; delete f._customRules; return f; });
+            fetch(`/forms/${this.form.id}`, {
+                method: "PUT",
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' },
                 body: JSON.stringify(this.form)
             })
-            .then(res => {
-                if (!res.ok) { return res.json().then(err => { throw err; }); }
-                return res.json();
-            })
-            .then(data => {
-                if (data.redirect_url) {
-                    window.location.href = data.redirect_url;
-                } else if (data.id) { // Fallback for older controller logic
-                    window.location.href = "{{ url('forms') }}/" + data.id;
-                } else {
-                    window.location.href = "{{ route('dashboard') }}";
-                }
-            })
-            .catch(error => {
-                console.error('Submission failed:', error);
-                alert('There was an error saving the form. Please check the console for details.');
-                this.isSubmitting = false;
-            });
+            .then(res => { if (!res.ok) { return res.json().then(err => { throw err; }); } return res.json(); })
+            .then(data => { if (data.redirect_url) { window.location.href = data.redirect_url; } else { window.location.href = "{{ route('dashboard') }}"; } })
+            .catch(error => { console.error('Submission failed:', error); alert('There was an error saving the form. Please check the console for details.'); this.isSubmitting = false; });
         },
-        onHeaderImageChange(event) {
-            const input = event.target;
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = e => this.form.header.image = e.target.result;
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
+        onHeaderImageChange(event) { const input = event.target; if (input.files && input.files[0]) { const reader = new FileReader(); reader.onload = e => this.form.header.image = e.target.result; reader.readAsDataURL(input.files[0]); } }
     }
 }
 </script>

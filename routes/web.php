@@ -69,15 +69,23 @@ Route::middleware(['auth'])->group(function () {
     // This route is an alias to the dashboard, good for clarity
     Route::get('/forms', [FormController::class, 'index'])->name('forms.index');
 
-    // Managing Form Responses
-    Route::get('/forms/{form}/responses', [FormResponseController::class, 'index'])->name('responses.index');
-    Route::delete('forms/{form}/responses/{response}', [FormResponseController::class, 'destroy'])->name('responses.destroy');
-    // Managing User Profile
+    Route::resource('forms', FormController::class)->except(['index', 'show']);
+
+
+
+    Route::resource('forms', FormController::class);
+
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
+
+    // Managing Form Responses
+    Route::get('/forms/{form}/responses', [FormResponseController::class, 'index'])->name('responses.index');
+    Route::delete('forms/{form}/responses/{responseId}', [FormResponseController::class, 'destroy'])->name('responses.destroy');
+    // Managing User Profile
+
     // For forms
-Route::resource('forms', FormController::class);
+
 // For responses
 
 

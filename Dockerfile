@@ -47,6 +47,13 @@ RUN chown -R www-data:www-data /var/www/html/storage \
 COPY apache-servername.conf /etc/apache2/conf-available/servername.conf
 RUN a2enconf servername
 
+
+# Copy the custom Apache configuration to the container.
+COPY 000-default.conf /etc/apache2/sites-available/000-default.conf
+
+# Enable rewrite module, which is needed for Laravel's routing.
+RUN a2enmod rewrite
+
 # Expose port 80 and start the Apache server.
 # This is the default command that runs when the container starts.
 EXPOSE 80

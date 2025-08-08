@@ -34,6 +34,9 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/bootstrap/cache
 
+COPY apache-servername.conf /etc/apache2/conf-available/servername.conf
+RUN a2enconf servername
+
 # Expose port 80 and start the Apache server
 EXPOSE 80
 CMD ["apache2-foreground"]

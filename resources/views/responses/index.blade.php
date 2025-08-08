@@ -3,29 +3,29 @@
 @section('content')
 <div class="max-w-4xl mx-auto py-10">
     @php
-    $header = is_array($form->header ?? null) ? $form->header : [];
-    $themeColor = $header['theme_color'] ?? '#6366f1';
-    $align = $header['title_align'] ?? 'center';
-    $headerImage = $header['image'] ?? null;
-    $logo = $header['logo'] ?? null;
-    $title = !empty($header['title']) && is_string($header['title']) ? $header['title'] : ($form->title ?? 'Untitled Form');
-    $subtitle = !empty($header['subtitle']) && is_string($header['subtitle']) ? $header['subtitle'] : null;
-@endphp
+        $header = is_array($form->header ?? null) ? $form->header : [];
+        $themeColor = $header['theme_color'] ?? '#6366f1';
+        $align = $header['title_align'] ?? 'center';
+        $headerImage = $header['image'] ?? null;
+        $logo = $header['logo'] ?? null;
+        $title = !empty($header['title']) && is_string($header['title']) ? $header['title'] : ($form->title ?? 'Untitled Form');
+        $subtitle = !empty($header['subtitle']) && is_string($header['subtitle']) ? $header['subtitle'] : null;
+    @endphp
 
-<header class="mb-8 flex flex-col items-center text-center">
-    @if($logo)
-        <img src="{{ $logo }}" class="w-20 h-20 object-contain mx-auto mb-3" alt="Company Logo" />
-    @endif
-    @if($headerImage)
-        <img src="{{ $headerImage }}" class="mb-4 w-32 h-32 mx-auto object-cover rounded-full border-4 border-indigo-200 shadow" alt="Form Banner"/>
-    @endif
-    <h2 class="text-3xl font-bold mb-1" style="color: {{ $themeColor }}; text-align:{{ $align }}">
-        {{ $title }}
-    </h2>
-    @if($subtitle)
-        <span class="text-base text-gray-500">{{ $subtitle }}</span>
-    @endif
-</header>
+    <header class="mb-8 flex flex-col items-center text-center">
+        @if($logo)
+            <img src="{{ $logo }}" class="w-20 h-20 object-contain mx-auto mb-3" alt="Company Logo" />
+        @endif
+        @if($headerImage)
+            <img src="{{ $headerImage }}" class="mb-4 w-32 h-32 mx-auto object-cover rounded-full border-4 border-indigo-200 shadow" alt="Form Banner"/>
+        @endif
+        <h2 class="text-3xl font-bold mb-1" style="color: {{ $themeColor }}; text-align:{{ $align }}">
+            {{ $title }}
+        </h2>
+        @if($subtitle)
+            <span class="text-base text-gray-500">{{ $subtitle }}</span>
+        @endif
+    </header>
 
     <h2 class="text-2xl font-bold mb-6">Responses for: "{{ $form->title }}"</h2>
     @if(session('success'))
@@ -51,19 +51,27 @@
                     @foreach($responses as $i => $response)
                         <tr>
                             <td class="px-2 py-2 border-b">{{ $responses->firstItem() + $i }}</td>
+
+                            {{-- This corrected loop now shows the data correctly --}}
                             @foreach($form->fields as $field)
                                 <td class="px-2 py-2 border-b">
                                     @php
-                                        $name = $field['name'] ?? '';
-                                        $v = $response->answers[$name] ?? '';
-                                        echo is_array($v) ? implode(', ', $v) : e($v);
+                                        // Get the column name from the field's 'name' property
+                                        $columnName = $field['name'] ?? '';
+
+                                        // Access the property DIRECTLY on the $response object
+                                        $value = $response->$columnName ?? 'N/A';
+
+                                        // Display the value safely
+                                        echo e($value);
                                     @endphp
                                 </td>
                             @endforeach
+                            {{-- End of correction --}}
+
                             <td class="px-2 py-2 border-b text-xs">{{ $response->created_at->format('Y-m-d H:i') }}</td>
                             <td class="px-2 py-2 border-b">
-
-<form action="{{ route('responses.destroy', [$form, $response->id]) }}" method="POST" onsubmit="return confirm('Delete this response?');" style="display:inline;">
+                                <form action="{{ route('responses.destroy', [$form, $response->id]) }}" method="POST" onsubmit="return confirm('Delete this response?');" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
                                     <button class="text-xs text-red-600 hover:underline" type="submit" title="Delete Response">🗑️</button>
@@ -77,9 +85,6 @@
         <div class="mt-6">{{ $responses->links() }}</div>
     @endif
     <a href="{{ route('dashboard') }}" class="mt-8 inline-block text-indigo-700 hover:underline">&larr; Back to Dashboard</a>
-
-
-
 </div>
 
 @php
@@ -137,6 +142,5 @@
     </div>
 </footer>
 @endif
-
 
 @endsection

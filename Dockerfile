@@ -41,6 +41,9 @@ COPY . .
 # This is a critical step to prevent "permissions denied" errors.
 RUN chown -R www-data:www-data /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/bootstrap/cache
+    # Set correct permissions for Laravel's writable directories
+RUN chown -R www-data:www-data /var/www/html/storage \
+    && chown -R www-data:www-data /var/www/html/bootstrap/cache
 
 # Fix the Apache ServerName warning.
 # This is optional but cleans up your logs.

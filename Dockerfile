@@ -4,6 +4,13 @@ FROM composer:2 AS composer_stage
 # Stage 2: Your application's base PHP image
 FROM php:8.2-apache
 
+# This is the corrected step to install all necessary dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    && docker-php-ext-install zip
+
 # Copy the Composer binary from the first stage
 COPY --from=composer_stage /usr/bin/composer /usr/local/bin/composer
 
@@ -23,4 +30,4 @@ COPY . .
 RUN chown -R www-data:www-data /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/bootstrap/cache
 
-# Continue with the rest of your Dockerfile...
+# Rest of your Dockerfile...

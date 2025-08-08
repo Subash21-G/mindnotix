@@ -5,7 +5,7 @@ FROM composer:2 AS composer_stage
 FROM php:8.2-apache
 
 # Copy the Composer binary from the first stage
-COPY --from=composer_stage /usr/local/bin/composer /usr/local/bin/composer
+COPY --from=composer_stage /usr/bin/composer /usr/local/bin/composer
 
 # Set the working directory
 WORKDIR /var/www/html
